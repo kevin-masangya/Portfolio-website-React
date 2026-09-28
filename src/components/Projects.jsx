@@ -1,8 +1,8 @@
 import ProjectCard from "./projectCard";
-import SectionHeading from "./sectionheading";
+import SectionHeading from "./SectionHeading";
 import { PROJECTS } from "../data/data";
 
-export default function projects() {
+export default function Projects() {
   return (
     <section id="projects" className="border-t border-[#232938] py-20">
       <div className="max-w-5xl mx-auto px-6">

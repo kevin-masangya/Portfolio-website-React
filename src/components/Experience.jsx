@@ -1,4 +1,4 @@
-import SectionHeading from "./sectionheading";
+import SectionHeading from "./SectionHeading";
 import { TIMELINE } from "../data/data";
 
 export default function Experience() {

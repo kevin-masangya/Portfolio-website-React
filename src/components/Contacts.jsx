@@ -1,4 +1,4 @@
-import SectionHeading from "./sectionheading";
+import SectionHeading from "./SectionHeading";
 
 const INPUT_CLASS =
   "w-full bg-[#12161F] border border-[#232938] rounded-lg px-3.5 py-2.5 focus:outline-2 focus:outline-[#5CE1D0]";

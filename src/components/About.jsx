@@ -1,5 +1,5 @@
 import SkillChip from "./SkillChip";
-import SectionHeading from "./sectionheading";
+import SectionHeading from "./SectionHeading";
 import { SKILLS } from "../data/data";
 
 export default function About() {
