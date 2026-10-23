@@ -7,10 +7,30 @@ import Projects from "./components/Projects.jsx";
 import Experience from "./components/Experience.jsx";
 import Contact from "./components/Contacts.jsx";
 import Footer from "./components/Footer.jsx";
+import { useEffect } from "react";
 
 export default function Portfolio() {
+  useEffect(() => {
+    const sections = document.querySelectorAll("[data-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          } else {
+            entry.target.classList.remove("is-visible");
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="bg-[#0B0E14] text-[#E9EDF2] font-sans min-h-screen">
+    <div className="bg-[#090708] text-[#f5edef] font-sans min-h-screen">
       <Keyframes />
       <Navbar />
       <Hero />

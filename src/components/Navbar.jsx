@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function NavLink({ href, children, onClick }) {
   return (
     <a
       href={href}
       onClick={onClick}
-      className="text-sm text-[#93A0B4] hover:text-[#5CE1D0] transition-colors"
+      className="nav-link text-sm text-[#d4c2c7] transition-colors hover:text-white"
     >
       {children}
     </a>
@@ -21,30 +21,52 @@ const LINKS = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 32);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0B0E14]/85 backdrop-blur border-b border-[#232938]">
-      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between relative">
-        <span className="font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
-          Kevin Masangya
-        </span>
+    <nav
+      className={`nav-shell ${isScrolled ? "nav-shell-scrolled" : ""}`}
+      aria-label="Main navigation"
+    >
+      <div className="nav-inner">
+        <a
+          href="#top"
+          className="nav-brand group inline-flex items-center gap-2.5 font-semibold tracking-tight"
+          style={{ fontFamily: "Sora, sans-serif" }}
+        >
+          <span className="nav-logo-mark grid size-9 place-items-center rounded-xl border border-[#642337] bg-[#210e14] text-sm text-[#ff5268]">
+            K.
+          </span>
+          <span>Kevin <span className="text-[#c8aeb4]">Masangya</span></span>
+        </a>
 
-        <div className="hidden md:flex gap-7">
+        <div className="nav-links-pill hidden md:flex items-center gap-7">
           {LINKS.map(([href, label]) => (
             <NavLink key={href} href={href}>{label}</NavLink>
           ))}
         </div>
 
-        <button
-          className="md:hidden border border-[#232938] rounded-lg px-2.5 py-1"
-          onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
+        <div className="nav-mobile-pill md:hidden">
+          <button
+            className="nav-menu-button text-[#f0dfe2] transition-colors hover:text-[#ff7180]"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+          >
+            <span aria-hidden="true">{menuOpen ? "×" : "☰"}</span>
+          </button>
+        </div>
 
         {menuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-[#12161F] border-b border-[#232938] flex flex-col gap-4 px-6 py-4 md:hidden">
+          <div id="mobile-navigation" className="nav-mobile-menu md:hidden">
             {LINKS.map(([href, label]) => (
               <NavLink key={href} href={href} onClick={() => setMenuOpen(false)}>
                 {label}

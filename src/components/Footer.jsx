@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="text-center text-sm text-[#93A0B4] py-8 border-t border-[#232938]">
+    <footer className="text-center text-sm text-[#b9a5aa] py-8 border-t border-[#382027]">
       © 2026 Kevin Masangya. Built with care.
     </footer>
   );
