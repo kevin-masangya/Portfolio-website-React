@@ -473,6 +473,32 @@ body {
   }
 }
 
+@media (max-width: 767px), (pointer: coarse) {
+  .scroll-reveal {
+    filter: none;
+    transform: translate3d(0, 12px, 0);
+    transition:
+      opacity .35s ease,
+      transform .4s ease;
+    will-change: auto;
+  }
+
+  .scroll-reveal.is-visible {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .layout-hover,
+  .layout-hover:hover {
+    transform: none;
+    filter: none;
+  }
+
+  .nav-inner {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

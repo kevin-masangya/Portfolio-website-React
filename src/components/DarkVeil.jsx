@@ -251,16 +251,32 @@ export default function DarkVeil({
     );
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const isMobile = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+    const lowPower = isMobile
+      || navigator.deviceMemory <= 4
+      || navigator.hardwareConcurrency <= 4
+      || connection?.saveData
+      || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType);
+    const pixelRatioCap = lowPower ? 0.65 : 1;
+    const frameInterval = lowPower ? 1000 / 24 : 1000 / 40;
     const mouse = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
     let frame = 0;
+    let frameTimer = 0;
     let startTime = 0;
     let visible = true;
     let alive = true;
     let scrollFrame = 0;
+    let scrollTimer = 0;
+    let scrolling = false;
 
     const resize = () => {
       const rect = host.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, Math.max(0.5, settingsRef.current.quality * 2));
+      const dpr = Math.min(
+        window.devicePixelRatio || 1,
+        Math.max(0.5, settingsRef.current.quality * 2),
+        pixelRatioCap,
+      );
       const width = Math.max(1, Math.round(rect.width * dpr));
       const height = Math.max(1, Math.round(rect.height * dpr));
       if (canvas.width !== width || canvas.height !== height) {
@@ -286,12 +302,25 @@ export default function DarkVeil({
       canvas.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
     };
     const onScroll = () => {
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      clearTimeout(frameTimer);
+      frameTimer = 0;
+      scrollTimer = window.setTimeout(() => {
+        scrolling = false;
+        wake();
+      }, 140);
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
       if (!scrollFrame) scrollFrame = requestAnimationFrame(updateParallax);
     };
 
     const draw = (now) => {
       frame = 0;
-      if (!alive || !visible) return;
+      frameTimer = 0;
+      if (!alive || !visible || scrolling) return;
       if (!startTime) startTime = now;
       const settings = settingsRef.current;
       const elapsed = reduceMotion ? 0 : (now - startTime) / 1000;
@@ -320,7 +349,12 @@ export default function DarkVeil({
       gl.uniform1f(uniforms.u_quality, settings.quality);
       gl.uniform3fv(uniforms.u_color, parseColor(settings.color));
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      if (!reduceMotion) frame = requestAnimationFrame(draw);
+      if (!reduceMotion) {
+        frameTimer = window.setTimeout(() => {
+          frameTimer = 0;
+          if (alive && visible && !scrolling) frame = requestAnimationFrame(draw);
+        }, frameInterval);
+      }
     };
 
     const wake = () => {
@@ -343,6 +377,8 @@ export default function DarkVeil({
       alive = false;
       cancelAnimationFrame(frame);
       cancelAnimationFrame(scrollFrame);
+      clearTimeout(frameTimer);
+      clearTimeout(scrollTimer);
       observer.disconnect();
       resizeObserver.disconnect();
       window.removeEventListener("pointermove", updateMouse);

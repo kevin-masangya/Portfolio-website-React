@@ -34,7 +34,15 @@ export default function HalftonePortrait({ src, alt }) {
 
     const pointer = pointerRef.current;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const lowPower = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches
+      || navigator.deviceMemory <= 4
+      || navigator.hardwareConcurrency <= 4
+      || connection?.saveData
+      || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType);
     let pixels;
+    const halftone = document.createElement("canvas");
+    const halftoneContext = halftone.getContext("2d");
     let width = 0;
     let height = 0;
     let frame = 0;
@@ -43,7 +51,7 @@ export default function HalftonePortrait({ src, alt }) {
 
     const resize = () => {
       const rect = host.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.75 : 1);
       width = rect.width;
       height = rect.height;
       canvas.width = Math.max(1, Math.round(width * dpr));
@@ -53,6 +61,8 @@ export default function HalftonePortrait({ src, alt }) {
       sample.height = Math.max(1, Math.round(height));
       reveal.width = sample.width;
       reveal.height = sample.height;
+      halftone.width = sample.width;
+      halftone.height = sample.height;
 
       if (!image.complete || !image.naturalWidth) return;
       const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
@@ -69,8 +79,36 @@ export default function HalftonePortrait({ src, alt }) {
         console.error("Halftone portrait could not read image pixels:", error);
         pixels = null;
       }
+      renderBase();
       render();
       canvas.classList.add("halftone-ready");
+    };
+
+    const renderBase = () => {
+      if (!pixels || !halftoneContext) return;
+      halftoneContext.clearRect(0, 0, width, height);
+      const cellSize = lowPower ? 7 : 5;
+      for (let y = 0; y < height; y += cellSize) {
+        for (let x = 0; x < width; x += cellSize) {
+          const px = Math.min(sample.width - 1, Math.floor(x + cellSize / 2));
+          const py = Math.min(sample.height - 1, Math.floor(y + cellSize / 2));
+          const index = (py * sample.width + px) * 4;
+          const alpha = pixels[index + 3] / 255;
+          if (alpha < 0.08) continue;
+          const red = pixels[index] / 255;
+          const green = pixels[index + 1] / 255;
+          const blue = pixels[index + 2] / 255;
+          const darkness = 1 - (red * 0.2126 + green * 0.7152 + blue * 0.0722);
+          const dot = cellSize * (0.12 + darkness * 0.28);
+          const inkRed = Math.round(136 + darkness * 104);
+          const inkGreen = Math.round(11 + darkness * 24);
+          const inkBlue = Math.round(31 + darkness * 42);
+          halftoneContext.beginPath();
+          halftoneContext.arc(x + cellSize / 2, y + cellSize / 2, dot, 0, Math.PI * 2);
+          halftoneContext.fillStyle = `rgba(${inkRed}, ${inkGreen}, ${inkBlue}, ${alpha * (0.58 + darkness * 0.38)})`;
+          halftoneContext.fill();
+        }
+      }
     };
 
     const render = (now = performance.now()) => {
@@ -82,31 +120,7 @@ export default function HalftonePortrait({ src, alt }) {
       pointer.burst = Math.max(0, pointer.burst - (reduceMotion ? 1 : delta * 0.85));
 
       context.clearRect(0, 0, width, height);
-      const cellSize = 5;
-      for (let y = 0; y < height; y += cellSize) {
-        for (let x = 0; x < width; x += cellSize) {
-          const px = Math.min(sample.width - 1, Math.floor(x + cellSize / 2));
-          const py = Math.min(sample.height - 1, Math.floor(y + cellSize / 2));
-          const index = (py * sample.width + px) * 4;
-          const alpha = pixels[index + 3] / 255;
-          if (alpha < 0.08) continue;
-
-          const red = pixels[index] / 255;
-          const green = pixels[index + 1] / 255;
-          const blue = pixels[index + 2] / 255;
-          const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-          const darkness = 1 - luminance;
-          const dot = cellSize * (0.12 + darkness * 0.28);
-          const inkRed = Math.round(136 + darkness * 104);
-          const inkGreen = Math.round(11 + darkness * 24);
-          const inkBlue = Math.round(31 + darkness * 42);
-
-          context.beginPath();
-          context.arc(x + cellSize / 2, y + cellSize / 2, dot, 0, Math.PI * 2);
-          context.fillStyle = `rgba(${inkRed}, ${inkGreen}, ${inkBlue}, ${alpha * (0.58 + darkness * 0.38)})`;
-          context.fill();
-        }
-      }
+      context.drawImage(halftone, 0, 0);
 
       const hoverRadius = Math.min(82, Math.max(42, Math.min(width, height) * 0.2));
       const burstProgress = 1 - pointer.burst;
